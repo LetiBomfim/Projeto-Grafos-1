@@ -2,13 +2,83 @@ import networkx as nx
 import requests
 import numpy as np
 import matplotlib.pyplot as plt
-
+import community as community_louvain
 
 class FacebookGraph:
     def __init__(self):
         self.G = None
         self.G_subset = None
     
+    def calcular_metricas(self, top_n=5):
+        #Calcula as métricas de centralidade e detecta comunidades no subgrafo.
+        if self.G_subset is None:
+            print("O subgrafo não existe! Execute extrair_subconjunto() primeiro.")
+            return False
+        
+        print("\n--- CALCULANDO MÉTRICAS DE CENTRALIDADE E COMUNIDADES ---")
+        
+        try:
+            #Degree Centrality
+            print("\n[1] Grau de Centralidade (Degree):")
+            print("Mede a popularidade de um nó pelo número de conexões diretas.")
+            degree_centrality = nx.degree_centrality(self.G_subset)
+            sorted_degree = sorted(degree_centrality.items(), key=lambda item: item[1], reverse=True)
+            print(f"  Top {top_n} nós com maior Grau de Centralidade:")
+            for i in range(top_n):
+                print(f"    {i+1}. Nó {sorted_degree[i][0]}: {sorted_degree[i][1]:.4f}")
+
+            #Betweenness Centrality
+            print("\n[2] Centralidade de Intermediação (Betweenness):")
+            print("Mede a importância de um nó como 'ponte' nos caminhos mais curtos entre outros nós.")
+            betweenness_centrality = nx.betweenness_centrality(self.G_subset)
+            sorted_betweenness = sorted(betweenness_centrality.items(), key=lambda item: item[1], reverse=True)
+            print(f"  Top {top_n} nós com maior Centralidade de Intermediação:")
+            for i in range(top_n):
+                print(f"    {i+1}. Nó {sorted_betweenness[i][0]}: {sorted_betweenness[i][1]:.4f}")
+
+            #Closeness Centrality
+            print("\n[3] Centralidade de Proximidade (Closeness):")
+            print("Mede quão rápido um nó consegue alcançar todos os outros na rede.")
+            closeness_centrality = nx.closeness_centrality(self.G_subset)
+            sorted_closeness = sorted(closeness_centrality.items(), key=lambda item: item[1], reverse=True)
+            print(f"  Top {top_n} nós com maior Centralidade de Proximidade:")
+            for i in range(top_n):
+                print(f"    {i+1}. Nó {sorted_closeness[i][0]}: {sorted_closeness[i][1]:.4f}")
+
+            #Eigenvector Centrality
+            print("\n[4] Centralidade de Autovetor (Eigenvector):")
+            print("Mede a influência de um nó com base na importância de seus vizinhos.")
+            try:
+                eigenvector_centrality = nx.eigenvector_centrality(self.G_subset, max_iter=1000)
+                sorted_eigenvector = sorted(eigenvector_centrality.items(), key=lambda item: item[1], reverse=True)
+                print(f"  Top {top_n} nós com maior Centralidade de Autovetor:")
+                for i in range(top_n):
+                    print(f"    {i+1}. Nó {sorted_eigenvector[i][0]}: {sorted_eigenvector[i][1]:.4f}")
+            except nx.PowerIterationFailedConvergence:
+                print("  Cálculo de autovetor não convergiu. Pulando esta métrica.")
+
+            #Algoritmo de Louvain
+            print("\n[5] Mapeamento de Comunidades (Louvain):")
+            print("Agrupa os nós em 'panelinhas' onde as conexões internas são mais fortes.")
+            communities = community_louvain.best_partition(self.G_subset)
+            num_communities = len(set(communities.values()))
+            print(f"  Número de comunidades detectadas: {num_communities}")
+
+            # Armazenando os resultados na classe para uso posterior
+            self.centrality_measures = {
+                'degree': degree_centrality,
+                'betweenness': betweenness_centrality,
+                'closeness': closeness_centrality,
+                'eigenvector': eigenvector_centrality if 'eigenvector_centrality' in locals() else None
+            }
+            self.communities = communities
+            
+            return True
+            
+        except Exception as e:
+            print(f"Erro ao calcular as métricas: {e}")
+            return False
+
     def baixar_dados(self):
 
         url = "https://snap.stanford.edu/data/facebook_combined.txt.gz"
@@ -117,7 +187,6 @@ class FacebookGraph:
             print(f"Erro na visualização: {e}")
             return False
 
-
 def main():
     graph = FacebookGraph()
 
@@ -130,6 +199,9 @@ def main():
     if not graph.extrair_subconjunto(2000):
         return
     
+    if not graph.calcular_metricas():
+        return
+
     if not graph.visualizar_rede():
         return
 
