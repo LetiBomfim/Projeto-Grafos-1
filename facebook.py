@@ -3,11 +3,75 @@ import requests
 import numpy as np
 import matplotlib.pyplot as plt
 import community as community_louvain
+from matplotlib.patches import Patch
 
 class FacebookGraph:
     def __init__(self):
         self.G = None
         self.G_subset = None
+
+    def baixar_dados(self):
+
+        url = "https://snap.stanford.edu/data/facebook_combined.txt.gz"
+
+        try:
+            #Requests é uma biblioteca cliente HTTP para Python
+            response = requests.get(url)
+            response.raise_for_status()
+
+            #Abre o arquivo com as arestas
+            with open("facebook_combined.txt.gz", "wb") as f:
+                f.write(response.content)
+            
+            print("Arquivo aberto com sucesso!\n")
+            
+            return True
+        
+        except Exception as e:
+            print(f"Não foi possível abrir o arquivo: {e}")
+            return False
+    
+    def carregar_rede(self):
+        try:
+            #Função nativa do NetworkX que lê um arquivo de lista de arestas e cria um grafo
+            self.G = nx.read_edgelist("facebook_combined.txt.gz")
+
+            #Teste se criou o grafo corretamente
+            print(f" - Nós: {self.G.number_of_nodes()}")          #4039
+            print(f" - Arestas: {self.G.number_of_edges()}")      #88234
+            print(f" - Densidade: {nx.density(self.G):.6f}")      #0.010820
+
+            return True
+        
+        except Exception as e:
+            print(f"Erro ao criar grafo: {e}")
+            return False
+    
+    def extrair_subconjunto(self, n_nos=2000):
+        if self.G is None:
+            print("O grafo não existe!")
+            return False
+        
+        todos_nos = list(self.G.nodes())
+        #Utiliza a biblioteca numpy para escolher nós aleatórios dentre os da lista
+        #replace=False é para não haver repetição de nós
+        nos_selecionados = np.random.choice(todos_nos, size=n_nos, replace=False)
+
+        #G_subset é o subgrafo com os 2000 selecionados
+        self.G_subset = self.G.subgraph(nos_selecionados).copy()
+
+        for node in nos_selecionados:
+            vizinhos = list(self.G.neighbors(node))
+            for vizinho in vizinhos:
+                if vizinho in nos_selecionados:
+                    self.G_subset.add_edge(node, vizinho)
+
+        print("\nInformações gerais dos 2000 nós selecionados:")
+        print(f" - Nós: {self.G_subset.number_of_nodes()}")
+        print(f" - Arestas: {self.G_subset.number_of_edges()}")
+        print(f" - Densidade: {nx.density(self.G_subset):.6f}")
+
+        return True
     
     def calcular_metricas(self, top_n=5):
         #Calcula as métricas de centralidade e detecta comunidades no subgrafo.
@@ -78,68 +142,6 @@ class FacebookGraph:
         except Exception as e:
             print(f"Erro ao calcular as métricas: {e}")
             return False
-
-    def baixar_dados(self):
-
-        url = "https://snap.stanford.edu/data/facebook_combined.txt.gz"
-
-        try:
-            #Requests é uma biblioteca cliente HTTP para Python
-            response = requests.get(url)
-            response.raise_for_status()
-
-            #Abre o arquivo com as arestas
-            with open("facebook_combined.txt.gz", "wb") as f:
-                f.write(response.content)
-            
-            print("Arquivo aberto com sucesso!")
-            
-            return True
-        
-        except Exception as e:
-            print(f"Não foi possível abrir o arquivo: {e}")
-            return False
-    
-    def carregar_rede(self):
-        try:
-            #Função nativa do NetworkX que lê um arquivo de lista de arestas e cria um grafo
-            self.G = nx.read_edgelist("facebook_combined.txt.gz")
-
-            #Teste se criou o grafo corretamente
-            print(f" - Nós: {self.G.number_of_nodes()}")          #4039
-            print(f" - Arestas: {self.G.number_of_edges()}")      #88234
-            print(f" - Densidade: {nx.density(self.G):.6f}")      #0.010820
-
-            return True
-        
-        except Exception as e:
-            print(f"Erro ao criar grafo: {e}")
-            return False
-    
-    def extrair_subconjunto(self, n_nos=2000):
-        if self.G is None:
-            print("O grafo não existe!")
-            return False
-        
-        todos_nos = list(self.G.nodes())
-        #Utiliza a biblioteca numpy para escolher nós aleatórios dentre os da lista
-        #replace=False é para não haver repetição de nós
-        nos_selecionados = np.random.choice(todos_nos, size=n_nos, replace=False)
-
-        #G_subset é o subgrafo com os 2000 selecionados
-        self.G_subset = self.G.subgraph(nos_selecionados).copy()
-
-        for node in nos_selecionados:
-            vizinhos = list(self.G.neighbors(node))
-            for vizinho in vizinhos:
-                if vizinho in nos_selecionados:
-                    self.G_subset.add_edge(node, vizinho)
-
-        print(f" - Nós: {self.G_subset.number_of_nodes()}")
-        print(f" - Arestas: {self.G_subset.number_of_edges()}")
-        print(f" - Densidade: {nx.density(self.G_subset):.6f}")
-
-        return True
     
     def visualizar_rede(self):
         try:
@@ -149,8 +151,7 @@ class FacebookGraph:
             
             plt.figure(figsize=(20, 15))
 
-            #O iterations tá como 1000, porque não sei se meu computador aguenta
-            pos = nx.spring_layout(self.G_subset, k=2, iterations=1000)
+            pos = nx.spring_layout(self.G_subset, k=2, iterations=2000)
 
             #Calcula o grau de cada nó coloca em um dicionário e o tamanho do nó é proporcional ao grau
             graus = dict(self.G_subset.degree())
@@ -176,6 +177,19 @@ class FacebookGraph:
             #Definições de visualização
             nx.draw_networkx_nodes(self.G_subset, pos, node_size=tamanhos, node_color=node_colors, cmap="plasma", alpha=1)
             nx.draw_networkx_edges(self.G_subset, pos, alpha=1, edge_color="gray", width=0.5)
+
+            #Definição da legenda
+            legend_labels = [f"Grau ≤ {int(percentis[0])}", f"Grau ≤ {-int(percentis[0])+1 + int(percentis[1])}",
+                             f"Grau ≤ {-int(percentis[1])+1 + int(percentis[2])}", f"Grau ≤ {-int(percentis[2])+1 + int(percentis[3])}",
+                             f"Grau > {int(percentis[3])}"]
+            
+            cmap = plt.cm.plasma
+            legend_colors = [cmap(0.1), cmap(0.3), cmap(0.5), cmap(0.7), cmap(0.9)]
+
+            legend_elements = [Patch(facecolor=legend_colors[i], label=legend_labels[i], alpha=0.8) for i in range(5)]
+
+            plt.legend(handles=legend_elements, loc="upper right", bbox_to_anchor=(1.15, 1.0), title="Legenda - Cores por Grau",
+                  fontsize=10, framealpha=0.9)
 
             plt.title("REDE FACEBOOK", fontsize=16, pad=20)
             plt.axis("off")
