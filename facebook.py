@@ -201,6 +201,33 @@ class FacebookGraph:
             print(f"Erro na visualização: {e}")
             return False
 
+    def visualizar_comunidades(self):
+        try:
+            if self.G_subset is None:
+                print("O subgrafo não existe!")
+                return False
+
+            pos = nx.spring_layout(self.G_subset, k=2, iterations=1000)
+
+            #Calcula o grau de cada nó coloca em um dicionário e o tamanho do nó é proporcional ao grau
+            graus = dict(self.G_subset.degree())
+            tamanhos = [np.log(graus[node]+1)*25 for node in self.G_subset.nodes()]
+
+            cmap = plt.cm.get_cmap("plasma", max(self.communities.values())+1)
+
+            #A cor de cada nó é a partir da lista de comunidades
+            nx.draw_networkx_nodes(self.G_subset, pos, node_color=list(self.communities.values()), cmap=cmap, node_size=tamanhos, alpha=1)
+            nx.draw_networkx_edges(self.G_subset, pos, alpha=1, edge_color="gray", width=0.5)
+
+            plt.axis("off")
+            plt.title("COMUNIDADES")
+            plt.tight_layout()
+            plt.show()
+
+        except Exception as e:
+            print(f"Erro na visualização: {e}")
+            return False
+
 def main():
     graph = FacebookGraph()
 
@@ -217,6 +244,9 @@ def main():
         return
 
     if not graph.visualizar_rede():
+        return
+
+    if not graph.visualizar_comunidades():
         return
 
 if __name__ == "__main__":
