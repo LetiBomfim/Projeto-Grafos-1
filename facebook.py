@@ -151,7 +151,7 @@ class FacebookGraph:
             
             plt.figure(figsize=(20, 15))
 
-            pos = nx.spring_layout(self.G_subset, k=2, iterations=2000)
+            pos = nx.spring_layout(self.G_subset, k=2, iterations=1000)
 
             #Calcula o grau de cada nó coloca em um dicionário e o tamanho do nó é proporcional ao grau
             graus = dict(self.G_subset.degree())
@@ -179,8 +179,8 @@ class FacebookGraph:
             nx.draw_networkx_edges(self.G_subset, pos, alpha=1, edge_color="gray", width=0.5)
 
             #Definição da legenda
-            legend_labels = [f"Grau ≤ {int(percentis[0])}", f"Grau ≤ {-int(percentis[0])+1 + int(percentis[1])}",
-                             f"Grau ≤ {-int(percentis[1])+1 + int(percentis[2])}", f"Grau ≤ {-int(percentis[2])+1 + int(percentis[3])}",
+            legend_labels = [f"Grau ≤ {int(percentis[0])}", f"Grau {int(percentis[0])+1}-{int(percentis[1])}",
+                             f"Grau {int(percentis[1])+1}-{int(percentis[2])}", f"Grau {int(percentis[2])+1}-{int(percentis[3])}",
                              f"Grau > {int(percentis[3])}"]
             
             cmap = plt.cm.plasma
@@ -200,7 +200,7 @@ class FacebookGraph:
         except Exception as e:
             print(f"Erro na visualização: {e}")
             return False
-
+        
     def visualizar_comunidades(self):
         try:
             if self.G_subset is None:
@@ -245,7 +245,7 @@ def main():
 
     if not graph.visualizar_rede():
         return
-
+    
     if not graph.visualizar_comunidades():
         return
 
