@@ -213,7 +213,7 @@ class FacebookGraph:
             graus = dict(self.G_subset.degree())
             tamanhos = [np.log(graus[node]+1)*25 for node in self.G_subset.nodes()]
 
-            cmap = plt.cm.get_cmap("plasma", max(self.communities.values())+1)
+            cmap = plt.get_cmap("plasma", max(self.communities.values())+1)
 
             #A cor de cada nó é a partir da lista de comunidades
             nx.draw_networkx_nodes(self.G_subset, pos, node_color=list(self.communities.values()), cmap=cmap, node_size=tamanhos, alpha=1)
