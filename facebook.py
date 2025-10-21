@@ -1,9 +1,24 @@
+#>> Projeto 1 de Grafos 
+#>> Disciplina: Teoria dos Grafos — UnB
+#>> Turma: 01, 2025/2
+#>> Professor: Dibio
+#>>> Integrantes:
+#>- Julia Paulo Amorim - 241039270
+#>- Leticia Gonçalves Bomfim - 241002411
+#>- Vitor Alencar Ribeiro - 231036292
+
+
+# O relatorio se encontra em relatorio.ipynb
+# O link da página do repositório é: https://github.com/LetiBomfim/Projeto-Grafos-1
+# O link para clone do repositório é: https://github.com/LetiBomfim/Projeto-Grafos-1.git
+
 import networkx as nx
 import requests
 import numpy as np
 import matplotlib.pyplot as plt
 import community as community_louvain
 from matplotlib.patches import Patch
+
 
 class FacebookGraph:
     def __init__(self):
